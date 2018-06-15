@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#da3236</color>
+    <color name="colorPrimaryDark">#000000</color>
+    <color name="colorAccent">#4884ec</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+
+
+    <!-- Color options for color coding vote averages -->
+    <color name="good_reviews">#146409</color>
+    <color name="mediocre_reviews">#91521b</color>
+    <color name="poor_reviews">#801a1a</color>
+    <color name="unknown_score">#000000</color>
+</resources>
