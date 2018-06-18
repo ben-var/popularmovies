@@ -1,5 +1,5 @@
 # popularmovies
-<p>Simple PopularMovie application that displays movies based off a web database of movies. Movies can be populated by popular or top rated in descrending order</p>
+<p>Simple PopularMovie application that displays movies based off a web database of movies. Movies can be populated by popular or top rated in descrending order. If a movie image is pressed, a detail page will open providing a high level overview of the movie. In future versions of this application, additional functionality will be added!</p>
 
 # How do I run this?
 1. Clone the repository onto your computer
