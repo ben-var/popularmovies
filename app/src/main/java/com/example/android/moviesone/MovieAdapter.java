@@ -7,10 +7,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.android.moviesone.utilities.MovieJSONUtils;
 import com.example.android.moviesone.utilities.NetworkUtils;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
@@ -19,7 +17,7 @@ import java.net.URL;
 import java.util.List;
 
 /**
- * Created by Benny on 6/6/2018.
+ * Adapter class built for the RecyclerView in the Main Activity.
  */
 
 public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapterViewHolder>{
@@ -68,6 +66,9 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
         return new MovieAdapterViewHolder(view);
     }
 
+    /**
+     * Populates an image into each view of the grid.
+     */
     @Override
     public void onBindViewHolder(@NonNull MovieAdapterViewHolder holder, int position) {
         Movie movieSelected = mMovieData.get(position);
@@ -94,12 +95,20 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
                 });
     }
 
+    /**
+     * Simply returns count of active views in adapter.
+     * @return the size of the amount of movies stored in memory.
+     */
     @Override
     public int getItemCount() {
         if (null == mMovieData) { return 0; }
         return mMovieData.size();
     }
 
+    /**
+     * Allows an outside class to replace the movie data stored in the adapter.
+     * @param movieData a list of movies already parsed.
+     */
     public void setMovieData(List<Movie> movieData) {
         mMovieData = movieData;
         notifyDataSetChanged();

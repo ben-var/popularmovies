@@ -6,6 +6,8 @@
     <string name="popular_sort">Sort by Most Popular</string>
     <string name="refresh_page">Refresh</string>
 
+    <string name="page_load_confirm">Page has been successfully loaded.</string>
+
 
     <string name="error_message">There was an Error!</string>
     <string name="network_error_message">There was an issue retrieving information
@@ -16,7 +18,7 @@
     <string name="error_parse_release_date">Error parsing date into formatted string</string>
 
 
-    <string name="movie_image_content">Movie Poster Image</string>
+    <string name="movie_poster_image_content">Movie Poster Image</string>
     <string name="movie_backdrop_content">Movie Backdrop Image</string>
 
     <string name="overview_label">Overview/Synopsis: </string>

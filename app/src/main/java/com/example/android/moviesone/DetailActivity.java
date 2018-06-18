@@ -1,11 +1,7 @@
 package com.example.android.moviesone;
 
 import android.content.Intent;
-import android.gesture.GestureOverlayView;
-import android.graphics.Color;
-import android.media.Image;
 import android.os.Bundle;
-import android.os.PersistableBundle;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -19,8 +15,6 @@ import com.example.android.moviesone.utilities.NetworkUtils;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
-import org.w3c.dom.Text;
-
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -28,7 +22,8 @@ import java.util.Date;
 import java.util.Locale;
 
 /**
- * Created by Benny on 6/8/2018.
+ * View to display individual movie data queried from themoviedb. This page acts as an overview
+ * for a specific (singular) movie.
  */
 
 public class DetailActivity extends AppCompatActivity {
@@ -61,6 +56,10 @@ public class DetailActivity extends AppCompatActivity {
 
         Intent intentStartedThisActivity = getIntent();
 
+        /*
+         * Loading every single view with the appropriate information, broken into logical
+         * steps.
+         */
         if (intentStartedThisActivity != null) {
             if (intentStartedThisActivity.hasExtra(MOVIE_CLASS)) {
                 mMovie = (Movie) intentStartedThisActivity.getSerializableExtra(MOVIE_CLASS);
@@ -91,9 +90,8 @@ public class DetailActivity extends AppCompatActivity {
                 mYearTextView.setText(yearText);
 
                 String voteAvgText = mMovie.getVoteAverage() + " / " + HIGHEST_POSSIBLE_SCORE;
-
-                int ratingColor = ContextCompat.getColor(this, getRatingColor(mMovie));
                 mRatingTextView.setText(voteAvgText);
+                int ratingColor = ContextCompat.getColor(this, getRatingColor(mMovie));
                 mRatingTextView.setTextColor(ratingColor);
 
                 String overviewText = getString(R.string.overview_label) + "\n\n"
@@ -170,7 +168,7 @@ public class DetailActivity extends AppCompatActivity {
 
         Date movieDate = null;
         try {
-            movieDate = (Date) inputFormat.parse(movie.getReleaseDate());
+            movieDate = inputFormat.parse(movie.getReleaseDate());
 
             resultString = outputFormat.format(movieDate);
         } catch (ParseException e) {

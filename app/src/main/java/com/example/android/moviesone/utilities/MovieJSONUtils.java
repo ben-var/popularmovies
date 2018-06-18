@@ -1,6 +1,5 @@
 package com.example.android.moviesone.utilities;
 
-import android.content.Context;
 import android.util.Log;
 
 import com.example.android.moviesone.Movie;
@@ -13,11 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Benny on 6/10/2018.
+ * JSON parser for data queried from themoviedb.
  *
  * Based off documentation found at https://developers.themoviedb.org/3/discover/movie-discover
  */
-
 public class MovieJSONUtils {
 
     public static final String TAG = MovieJSONUtils.class.getSimpleName();
@@ -42,7 +40,14 @@ public class MovieJSONUtils {
     public static final String VIDEO = "video";
     public static final String VOTE_AVERAGE = "vote_average";
 
-    public static List<Movie> getMoviesFromJSON(Context context, String movieJSONList)
+    /**
+     * Parses a page of movie JSON data and returns the data in a list of structured model class
+     * 'Movie' format.
+     * @param movieJSONList raw string JSON data for a page of movies.
+     * @return list of parsed movies.
+     * @throws JSONException if there is an error with type casting to JSONObjects
+     */
+    public static List<Movie> getMoviesFromJSON(String movieJSONList)
             throws JSONException {
 
         List<Movie> parsedMovieData = new ArrayList<Movie>(50);
@@ -66,6 +71,11 @@ public class MovieJSONUtils {
         return parsedMovieData;
     }
 
+    /**
+     * Parses an individual movie from a JSONObject into a Movie object.
+     * @param JSONMovie JSONObject structured as a movie object (un-casted).
+     * @return parsed Movie object with fields populated.
+     */
     public static Movie parseMovie(JSONObject JSONMovie) {
 
         Movie parsedMovie;
@@ -103,6 +113,11 @@ public class MovieJSONUtils {
         }
     }
 
+    /**
+     * Parses a JSONArray (int) into a Java List.
+     * @param intArray JSONArray of type int
+     * @return Java List of type Integer
+     */
     private static List<Integer> parseJSONIntArray(JSONArray intArray) {
         List<Integer> parsedIntArray = new ArrayList<Integer>();
 

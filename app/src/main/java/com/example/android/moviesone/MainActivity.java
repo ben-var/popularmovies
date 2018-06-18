@@ -6,22 +6,14 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.NetworkOnMainThreadException;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.MenuInflater;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.GridLayout;
-import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -31,15 +23,15 @@ import com.example.android.moviesone.utilities.MovieJSONUtils;
 import com.example.android.moviesone.utilities.NetworkUtils;
 
 import java.net.URL;
-import java.text.ParseException;
 import java.util.List;
 
 /**
- * TODO's to finish app:
- * 1. Add more documentation
- * 2. Clean redundant code into modular methods
- * 3. Ensure xml values are properly used throughout app.
- * 4. Add a toast for a page refresh so the user knows something happened.
+ * Main Activity of App is a grid view of movie poster images. Images are queried from
+ * themoviedb. A recycler view is used in order to populate the main GUI page.
+ *
+ * @author Ben Vargas
+ * @version 1.0
+ * Date Last Modified: 6/18/2018
  */
 public class MainActivity extends AppCompatActivity implements MovieAdapterOnClickHandler {
 
@@ -54,9 +46,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
 
     private RecyclerView mRecyclerView;
     private MovieAdapter mMovieAdapter;
-
     private TextView mErrorMessageDisplay;
-
     private ProgressBar mLoadingIndicator;
 
     private List<Movie> moviesList;
@@ -112,12 +102,20 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
             return super.onOptionsItemSelected(item);
         }
 
+        Toast.makeText(MainActivity.this, getString(R.string.page_load_confirm),
+                                                                    Toast.LENGTH_SHORT).show();
+
         // only runs if one of options defined in settings is selected
         // value of stateOfSortPreferred will determine which network call is made
         loadMovieData();
         return true;
     }
 
+    /**
+     * Kickoff method that starts the query for the movie information (i.e., poster
+     * images attached to instances of the Movie class after JSONObjects from themoviedb
+     * are parsed.
+     */
     private void loadMovieData() {
 
         if (isOnline()) {
@@ -145,6 +143,10 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
         return netInfo != null && netInfo.isConnectedOrConnecting();
     }
 
+    /**
+     * Starts a new DetailActivity for a movie poster that is clicked.
+     * @param movieSelected movie that was pressed from the Main Activity.
+     */
     @Override
     public void onClick(Movie movieSelected) {
         Context context = this;
@@ -154,11 +156,17 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
         startActivity(intentToStartDetailActivity);
     }
 
+    /**
+     * Hides the error display and shows the movie poster grid.
+     */
     private void showMovieDataView() {
         mErrorMessageDisplay.setVisibility(View.INVISIBLE);
         mRecyclerView.setVisibility(View.VISIBLE);
     }
 
+    /**
+     * Hides the movie poster grid and shows the error display.
+     */
     private void showErrorMessage() {
         mRecyclerView.setVisibility(View.INVISIBLE);
         mErrorMessageDisplay.setVisibility(View.VISIBLE);
@@ -167,6 +175,9 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
         mLoadingIndicator.setVisibility(View.INVISIBLE);
     }
 
+    /**
+     * Asynctask that will perform an asynchronous query to return to the main activity.
+     */
     public class FetchMoviesTask extends AsyncTask<String, Void, List<Movie>> {
 
         @Override
@@ -198,7 +209,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
             if (strings.length == 0) { return null; }
 
             String sortBy = strings[0];
-            if (sortBy == "popular") {
+            if (sortBy.equals("popular")) {
                 movieRequestURL = NetworkUtils.getPopularMoviesURL();
             } else if (sortBy.equals("top-rated")) {
                 movieRequestURL = NetworkUtils.getTopRatedMoviesURL();
@@ -208,9 +219,9 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
 
             if (movieRequestURL != null) {
                 try{
-                    String JSONResponse = NetworkUtils.getReponseFromHttpUrl(movieRequestURL);
+                    String JSONResponse = NetworkUtils.GetResponseFromHttpUrl(movieRequestURL);
 
-                    movies = MovieJSONUtils.getMoviesFromJSON(MainActivity.this, JSONResponse);
+                    movies = MovieJSONUtils.getMoviesFromJSON(JSONResponse);
                     return movies;
                 } catch (Exception e) {
                     e.printStackTrace();

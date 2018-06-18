@@ -15,7 +15,6 @@ import java.util.Scanner;
 /**
  * Simple Network Utility to build URLs to perform Movie DB Queries.
  */
-
 public class NetworkUtils {
 
     public static final int MED_SMALL_IMAGE = 0;
@@ -38,6 +37,9 @@ public class NetworkUtils {
     private static final String TOP_RATED_MOVIES_URL =
             "https://api.themoviedb.org/3/movie/top_rated?api_key=" + API_KEY;
 
+    /**
+     * URL Segments that are used to build query URL Strings.
+     */
     private static final String MOVIE_BASE_URL = "http://image.tmdb.org/t/p/";
 
     private static final String PAGE = "page";
@@ -46,26 +48,51 @@ public class NetworkUtils {
     private static final String DEFAULT_IMAGE_SIZE = "w185";
     private static final String DEFAULT_LARGE_IMAGE_SIZE = "w500";
 
+    /**
+     * Returns a URL to the JSON data from the first page of the most popular movies.
+     * @return URL to popular movies (first page) JSON data
+     */
     public static URL getPopularMoviesURL() {
         Uri builtUri = Uri.parse(POPULAR_MOVIES_URL);
         return buildURLfromURI(builtUri);
     }
 
+    /**
+     * Returns the a URL to the JSON data to the page specified, sorted from most popular
+     * to least popular.
+     * @param pageNumber page number of movie db info to be scraped.
+     * @return URL to popular movies JSON data for specific page.
+     */
     public static URL getPopularMoviesURL(int pageNumber) {
         Uri builtUri = Uri.parse(POPULAR_MOVIES_URL + "&" + PAGE + "=" + pageNumber);
         return buildURLfromURI(builtUri);
     }
 
+    /**
+     * Returns a URL to the JSON data from the first page of the top-rated movies.
+     * @return URL to top-rated (first page) JSON data
+     */
     public static URL getTopRatedMoviesURL() {
         Uri builtUri = Uri.parse(TOP_RATED_MOVIES_URL);
         return buildURLfromURI(builtUri);
     }
 
+    /**
+     * Returns the a URL to the JSON data to the page specified, sorted from highest rated
+     * to lowest rated.
+     * @param pageNumber page number of movie db info to be scraped.
+     * @return URL to top-rated movies JSON data for specific page.
+     */
     public static URL getTopRatedMoviesURL(int pageNumber) {
         Uri builtUri = Uri.parse(TOP_RATED_MOVIES_URL + "&" + PAGE + "=" + pageNumber);
         return buildURLfromURI(builtUri);
     }
 
+    /**
+     * Queries a movie poster image from themoviedb.
+     * @param movie single movie that poster img is supposed to be requested for.
+     * @return direct link to movie poster image.
+     */
     public static URL getMoviePosterImageURL(Movie movie) {
         String posterPath = movie.getPosterPath();
 
@@ -73,6 +100,12 @@ public class NetworkUtils {
         return buildURLfromURI(builtUri);
     }
 
+    /**
+     * Overloaded getMoviePosterImageURL that allows for size to be specified.
+     * @param movie movie to get the image for
+     * @param size desired size of image
+     * @return direct link to movie poster image for specified size
+     */
     public static URL getMoviePosterImageURL(Movie movie, int size) {
         String posterPath = movie.getPosterPath();
 
@@ -82,6 +115,11 @@ public class NetworkUtils {
         return buildURLfromURI(builtUri);
     }
 
+    /**
+     * Queries a movie backdrop image from themoviedb.
+     * @param movie single movie that poster img is supposed to be requested for.
+     * @return direct link to movie backdrop image.
+     */
     public static URL getMovieBackdropImageURL(Movie movie) {
         String backdropPath = movie.getBackdropPath();
 
@@ -89,6 +127,12 @@ public class NetworkUtils {
         return buildURLfromURI(builtUri);
     }
 
+    /**
+     * Overloaded getMovieBackdropImageURL that allows for size to be specified.
+     * @param movie movie to get the image for
+     * @param size desired size of image
+     * @return direct link to movie backdrop image for specified size
+     */
     public static URL getMovieBackdropImageURL(Movie movie, int size) {
         String backdropPath = movie.getBackdropPath();
 
@@ -98,6 +142,11 @@ public class NetworkUtils {
         return buildURLfromURI(builtUri);
     }
 
+    /**
+     * Allows for simple use of image size referencing by other classes.
+     * @param size image size using NetworkUtils constants.
+     * @return URL Segment for specified size
+     */
     private static String findImageSize(int size) {
         switch (size) {
             case MED_SMALL_IMAGE:
@@ -111,6 +160,11 @@ public class NetworkUtils {
         }
     }
 
+    /**
+     * Converts a URI to a URL, and throws necessary exceptions if cannot convert.
+     * @param uri URI to be converted
+     * @return converted URL
+     */
     public static URL buildURLfromURI(Uri uri) {
         URL url = null;
 
@@ -125,7 +179,13 @@ public class NetworkUtils {
         return url;
     }
 
-    public static String getReponseFromHttpUrl(URL url) throws IOException {
+    /**
+     * Opens a connection to a specified url for data processing.
+     * @param url URL to be connected to
+     * @return string response
+     * @throws IOException if error with opening connection
+     */
+    public static String GetResponseFromHttpUrl(URL url) throws IOException {
 
         HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
 
