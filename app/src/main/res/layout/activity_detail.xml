@@ -35,7 +35,7 @@
                 app:layout_constraintTop_toBottomOf="@id/movie_title_tv"
                 app:layout_constraintRight_toLeftOf="@id/misc_movie_info_tv"
                 app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintBottom_toTopOf="@id/borderUnderPoster"/>
+                app:layout_constraintBottom_toTopOf="@id/border_under_poster"/>
 
             <LinearLayout
                 android:id="@+id/misc_movie_info_tv"
@@ -82,10 +82,22 @@
 
                 </LinearLayout>
 
+                <Button
+                    android:id="@+id/add_to_favorites_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:layout_marginTop="25dp"
+                    android:paddingLeft="10dp"
+                    android:paddingRight="10dp"
+                    android:textSize="12sp"
+                    android:text="@string/add_to_favorites"
+                    android:textColor="@color/white"
+                    android:background="@color/colorButton2" />
+
             </LinearLayout>
 
             <View
-                android:id="@+id/borderUnderPoster"
+                android:id="@+id/border_under_poster"
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="@color/black"
@@ -105,7 +117,7 @@
                 android:paddingLeft="8dp"
                 android:paddingRight="8dp"
                 android:layout_gravity="center"
-                app:layout_constraintTop_toBottomOf="@id/borderUnderPoster"
+                app:layout_constraintTop_toBottomOf="@id/border_under_poster"
                 app:layout_constraintRight_toRightOf="parent"
                 app:layout_constraintLeft_toLeftOf="parent"/>
 
@@ -117,8 +129,26 @@
                 android:alpha="0.2"
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/borderUnderPoster"
+                app:layout_constraintTop_toBottomOf="@id/border_under_poster"
                 app:layout_constraintBottom_toBottomOf="parent"/>
+
+            <View
+                android:id="@+id/border_under_overview"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/black"
+                app:layout_constraintTop_toBottomOf="@id/movie_overview_tv"
+                app:layout_constraintBottom_toTopOf="@id/trailer_views" />
+
+
+            <!-- TODO: implement the trailer functionality with an view with an adapter -->
+            <TextView
+                android:id="@+id/trailer_views"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="TRAILERS TO GO HERE"
+                app:layout_constraintTop_toBottomOf="@id/border_under_overview"
+                app:layout_constraintBottom_toBottomOf="parent" />
 
         </android.support.constraint.ConstraintLayout>
 

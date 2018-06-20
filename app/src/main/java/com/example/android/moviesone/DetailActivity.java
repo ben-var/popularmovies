@@ -41,6 +41,8 @@ public class DetailActivity extends AppCompatActivity {
     private TextView mRatingTextView;
     private TextView mOverviewTextView;
     private ImageView mBackdropView;
+    // TODO Implement the correct views to display movie trailers
+    private TextView mTrailerViews;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -53,6 +55,7 @@ public class DetailActivity extends AppCompatActivity {
         mRatingTextView = (TextView) findViewById(R.id.movie_rating_tv);
         mOverviewTextView = (TextView) findViewById(R.id.movie_overview_tv);
         mBackdropView = (ImageView) findViewById(R.id.backdrop_iv);
+        mTrailerViews = (TextView) findViewById(R.id.trailer_views);
 
         Intent intentStartedThisActivity = getIntent();
 

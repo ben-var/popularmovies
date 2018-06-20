@@ -30,8 +30,8 @@ import java.util.List;
  * themoviedb. A recycler view is used in order to populate the main GUI page.
  *
  * @author Ben Vargas
- * @version 1.0
- * Date Last Modified: 6/18/2018
+ * @version 1.1 (prototype)
+ * Date Last Modified: 6/20/2018
  */
 public class MainActivity extends AppCompatActivity implements MovieAdapterOnClickHandler {
 
@@ -92,7 +92,10 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
     public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
 
-        if (itemId == R.id.popular_sort_option) {
+        if (itemId == R.id.display_favorites) {
+            Toast.makeText(this, "Favorites to be Implemented Later",
+                    Toast.LENGTH_SHORT).show();
+        } else if (itemId == R.id.popular_sort_option) {
             stateOfSortPreferred = POPULAR_SORT;
         } else if (itemId == R.id.top_rated_sort_option) {
             stateOfSortPreferred = TOP_RATED_SORT;
