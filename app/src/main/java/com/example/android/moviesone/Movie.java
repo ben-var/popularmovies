@@ -1,5 +1,9 @@
 package com.example.android.moviesone;
 
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.Ignore;
+import android.arch.persistence.room.PrimaryKey;
+
 import java.io.Serializable;
 import java.util.List;
 
@@ -9,8 +13,11 @@ import java.util.List;
  * The instance variables are based off the JSONObject returned according to themoviedb.org
  * documentation: https://developers.themoviedb.org/3/discover/movie-discover
  */
-
+@Entity(tableName = "favorites")
 public class Movie implements Serializable {
+
+    @PrimaryKey(autoGenerate = true)
+    private int favoriteId;
 
     private String posterPath;
     private boolean adult;
@@ -47,6 +54,7 @@ public class Movie implements Serializable {
      * @param video
      * @param voteAverage
      */
+    @Ignore
     public Movie(String posterPath, boolean adult, String overview, String releaseDate,
                  List<Integer> genreIdArray, int movieId, String originalTitle, String originalLanguage,
                  String title, String backdropPath, double popularity, int voteCount,
@@ -68,7 +76,54 @@ public class Movie implements Serializable {
         this.setVoteAverage(voteAverage);
     }
 
+    /**
+     * Constructor that allows for favoriteId to be used by Room when the favorites table
+     * is generated.
+     *
+     * @param favoriteId
+     * @param posterPath
+     * @param adult
+     * @param overview
+     * @param releaseDate
+     * @param genreIdArray
+     * @param movieId
+     * @param originalTitle
+     * @param originalLanguage
+     * @param title
+     * @param backdropPath
+     * @param popularity
+     * @param voteCount
+     * @param video
+     * @param voteAverage
+     */
+    public Movie(int favoriteId, String posterPath, boolean adult, String overview, String releaseDate,
+                 List<Integer> genreIdArray, int movieId, String originalTitle, String originalLanguage,
+                 String title, String backdropPath, double popularity, int voteCount,
+                 boolean video, double voteAverage) {
+
+        this.setPosterPath(posterPath);
+        this.setAdult(adult);
+        this.setOverview(overview);
+        this.setReleaseDate(releaseDate);
+        this.setGenreIdArray(genreIdArray);
+        this.setMovieId(movieId);
+        this.setOriginalTitle(originalTitle);
+        this.setOriginalLanguage(originalLanguage);
+        this.setTitle(title);
+        this.setBackdropPath(backdropPath);
+        this.setPopularity(popularity);
+        this.setVoteCount(voteCount);
+        this.setVideo(video);
+        this.setVoteAverage(voteAverage);
+    }
+
     /** Setters and getters for each variable of the Movie class */
+
+    public int getFavoriteId() { return favoriteId; }
+
+    public void setFavoriteId(int inFavoriteId) {
+        favoriteId = inFavoriteId;
+    }
 
     public String getTitle() {
         return title;
