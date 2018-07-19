@@ -1,4 +1,4 @@
-package com.example.android.moviesone.utilities;
+package utilities;
 
 import android.util.Log;
 

@@ -28,6 +28,11 @@
                 android:title="@string/refresh_page"
                 android:orderInCategory="4"
                 app:showAsAction="never" />
+            <item
+                android:id="@+id/clear_all_favorites"
+                android:title="@string/clear_favorites_option"
+                android:orderInCategory="5"
+                app:showAsAction="never" />
         </menu>
 
     </item>

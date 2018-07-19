@@ -261,6 +261,26 @@ public class Movie implements Serializable {
                 "Vote Average: " + voteAverage;
     }
 
+    /**
+     * Overridden equals method specifically for Movies. This method ONLY checks values
+     * that are unlikely to be changed over the long run, as things such as vote count
+     * and popularity are subject to constant fluctuations.
+     * @param obj object to compare to within this instance
+     * @return whether the obj is the same movie or not, represented by a boolean
+     */
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Movie)) {
+            return false;
+        }
+
+        Movie other = (Movie) obj;
+
+        return other.getMovieId() == movieId &&
+                other.getReleaseDate().equals(releaseDate) &&
+                other.getTitle().equals(title) &&
+                other.originalLanguage.equals(originalLanguage);
+    }
+
 
 }
 

@@ -1,4 +1,4 @@
-package com.example.android.moviesone;
+package database;
 
 import android.arch.persistence.room.TypeConverter;
 import android.util.Log;
@@ -18,12 +18,19 @@ public class GenreListConverter {
     public static List<Integer> toGenreList(String genres) {
         List<Integer> genreList = new ArrayList<Integer>();
 
-        String[] genresArray = genres.split(" ");
+        String[] genresArray = null;
+        if(genres.length() >= 1) {
+            genresArray = genres.split(" ");
+        } else {
+            return null;
+        }
+
         int parsedInt;
         for (String genre : genresArray) {
             try {
                 parsedInt = Integer.parseInt(genre);
             } catch (NumberFormatException e) {
+                Log.e(LOG_TAG, genre);
                 Log.e(LOG_TAG, "Genre database object is corrupted.");
                 throw new RuntimeException("Genre database object is corrupted");
             }
@@ -39,7 +46,7 @@ public class GenreListConverter {
         StringBuilder genreString = new StringBuilder();
 
         for (Integer genreInt : genreList) {
-            genreString.append(genreInt);
+            genreString.append(genreInt + " ");
         }
 
         return genreString.toString();

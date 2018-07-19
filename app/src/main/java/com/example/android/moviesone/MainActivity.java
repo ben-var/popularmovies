@@ -19,8 +19,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.android.moviesone.MovieAdapter.MovieAdapterOnClickHandler;
-import com.example.android.moviesone.utilities.MovieJSONUtils;
-import com.example.android.moviesone.utilities.NetworkUtils;
+
+import database.AppDatabase;
+import utilities.MovieJSONUtils;
+import utilities.NetworkUtils;
 
 import java.net.URL;
 import java.util.List;
@@ -38,8 +40,11 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final String MOVIE_CLASS =  Movie.class.getSimpleName();
 
+    private AppDatabase mDb;
+
     private static final String POPULAR_SORT = "popular";
     private static final String TOP_RATED_SORT = "top-rated";
+    private static final String FAVORITES_DISPLAY = "favorites";
     private static final String DEFAULT_SORT = POPULAR_SORT;
 
     private static String stateOfSortPreferred = DEFAULT_SORT;
@@ -47,6 +52,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
     private RecyclerView mRecyclerView;
     private MovieAdapter mMovieAdapter;
     private TextView mErrorMessageDisplay;
+    private TextView mEmptyFavoritesMessageDisplay;
     private ProgressBar mLoadingIndicator;
 
     private List<Movie> moviesList;
@@ -56,10 +62,11 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mDb = AppDatabase.getInstance(getApplicationContext());
+
         mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_movie);
-
         mErrorMessageDisplay = (TextView) findViewById(R.id.tv_error_message_display);
-
+        mEmptyFavoritesMessageDisplay = (TextView) findViewById(R.id.empty_favorites_display);
         mLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loading_indicator);
 
         int numOfColumns = 2;
@@ -67,13 +74,9 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
                 this, numOfColumns);
 
         mRecyclerView.setLayoutManager(layoutManager);
-
         mRecyclerView.setHasFixedSize(true);
-
         mMovieAdapter = new MovieAdapter(this);
-
         mRecyclerView.setAdapter(mMovieAdapter);
-
         mLoadingIndicator.setVisibility(View.VISIBLE);
 
         loadMovieData();
@@ -93,14 +96,19 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
         int itemId = item.getItemId();
 
         if (itemId == R.id.display_favorites) {
-            Toast.makeText(this, "Favorites to be Implemented Later",
-                    Toast.LENGTH_SHORT).show();
+            stateOfSortPreferred = FAVORITES_DISPLAY;
         } else if (itemId == R.id.popular_sort_option) {
             stateOfSortPreferred = POPULAR_SORT;
         } else if (itemId == R.id.top_rated_sort_option) {
             stateOfSortPreferred = TOP_RATED_SORT;
         } else if (itemId == R.id.refresh_page_option) {
             // no change in state required
+        } else if (itemId == R.id.clear_all_favorites) {
+            mDb.movieDao().nukeTable();
+            Toast.makeText(getApplicationContext(), getString(R.string.deleted_favorites_message),
+                    Toast.LENGTH_SHORT)
+                    .show();
+            return true;
         } else {
             return super.onOptionsItemSelected(item);
         }
@@ -125,6 +133,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
             showMovieDataView();
             new FetchMoviesTask().execute(stateOfSortPreferred);
         } else {
+            Log.e(TAG, stateOfSortPreferred);
             showErrorMessage();
         }
     }
@@ -178,6 +187,16 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
         mLoadingIndicator.setVisibility(View.INVISIBLE);
     }
 
+    private void showEmptyFavoritesMessage() {
+        mRecyclerView.setVisibility(View.INVISIBLE);
+        mErrorMessageDisplay.setVisibility(View.INVISIBLE);
+        mEmptyFavoritesMessageDisplay.setVisibility(View.VISIBLE);
+        Log.e(TAG, getString(R.string.null_favorites_error));
+
+        mLoadingIndicator.setVisibility(View.INVISIBLE);
+
+    }
+
     /**
      * Asynctask that will perform an asynchronous query to return to the main activity.
      */
@@ -212,10 +231,12 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
             if (strings.length == 0) { return null; }
 
             String sortBy = strings[0];
-            if (sortBy.equals("popular")) {
+            if (sortBy.equals(POPULAR_SORT)) {
                 movieRequestURL = NetworkUtils.getPopularMoviesURL();
-            } else if (sortBy.equals("top-rated")) {
+            } else if (sortBy.equals(TOP_RATED_SORT)) {
                 movieRequestURL = NetworkUtils.getTopRatedMoviesURL();
+            } else if (sortBy.equals(FAVORITES_DISPLAY)) {
+                return mDb.movieDao().loadAllMovies();
             } else {
                 return null;
             }
@@ -243,6 +264,11 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
 
             if (movies != null) {
                 mMovieAdapter.setMovieData(movies);
+            //TODO CURRENTLY this showMEmptyFavoritesMessage does not display. Instead
+            // we are met with a blank screen. The boolean expressions do not capture this
+            // correctly in its current state. This need refactoring.
+            } else if (stateOfSortPreferred.equals(FAVORITES_DISPLAY)) {
+                showEmptyFavoritesMessage();
             } else {
                 showErrorMessage();
             }

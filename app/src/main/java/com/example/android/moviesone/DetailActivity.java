@@ -1,5 +1,6 @@
 package com.example.android.moviesone;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -7,11 +8,13 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.android.moviesone.utilities.NetworkUtils;
+import database.AppDatabase;
+import utilities.NetworkUtils;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
@@ -19,6 +22,7 @@ import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -31,6 +35,8 @@ public class DetailActivity extends AppCompatActivity {
     private static final String TAG = DetailActivity.class.getSimpleName();
     private static final String MOVIE_CLASS =  Movie.class.getSimpleName();
 
+    private AppDatabase mDb;
+
     private static final int HIGHEST_POSSIBLE_SCORE = 10;
 
     private Movie mMovie;
@@ -39,6 +45,7 @@ public class DetailActivity extends AppCompatActivity {
     private ImageView mPosterView;
     private TextView mYearTextView;
     private TextView mRatingTextView;
+    private Button mFavoritesButton;
     private TextView mOverviewTextView;
     private ImageView mBackdropView;
     // TODO Implement the correct views to display movie trailers
@@ -49,10 +56,13 @@ public class DetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
 
+        mDb = AppDatabase.getInstance(getApplicationContext());
+
         mTitleTextView = (TextView) findViewById(R.id.movie_title_tv);
         mPosterView = (ImageView) findViewById(R.id.movie_poster_iv);
         mYearTextView = (TextView) findViewById(R.id.movie_year_tv);
         mRatingTextView = (TextView) findViewById(R.id.movie_rating_tv);
+        mFavoritesButton = (Button) findViewById(R.id.add_to_favorites_button);
         mOverviewTextView = (TextView) findViewById(R.id.movie_overview_tv);
         mBackdropView = (ImageView) findViewById(R.id.backdrop_iv);
         mTrailerViews = (TextView) findViewById(R.id.trailer_views);
@@ -97,6 +107,21 @@ public class DetailActivity extends AppCompatActivity {
                 int ratingColor = ContextCompat.getColor(this, getRatingColor(mMovie));
                 mRatingTextView.setTextColor(ratingColor);
 
+                View.OnClickListener favButtonListener = new View.OnClickListener() {
+
+                    /**
+                     * Called when a view has been clicked.
+                     *
+                     * @param v The view that was clicked.
+                     */
+                    @Override
+                    public void onClick(View v) {
+                        onFavoriteButtonClicked();
+                    }
+                };
+
+                mFavoritesButton.setOnClickListener(favButtonListener);
+
                 String overviewText = getString(R.string.overview_label) + "\n\n"
                                                                     + mMovie.getOverview();
                 mOverviewTextView.setText(overviewText);
@@ -126,6 +151,30 @@ public class DetailActivity extends AppCompatActivity {
         } else {
             Toast.makeText(DetailActivity.this,
                     R.string.error_movie_retrieval_message, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * This method is called when the "Add To Favorites" button is clicked.
+     *
+     * This method will take the currently selected movie and add it to the underlying database.
+     */
+    public void onFavoriteButtonClicked() {
+        List<Movie> movieDb = mDb.movieDao().loadAllMovies();
+        Context context = getApplicationContext();
+
+        if (!movieDb.contains(mMovie)) {
+            mDb.movieDao().insertMovie(mMovie);
+            Toast.makeText(getApplicationContext(), getString(R.string.add_favorites_confirm),
+                    Toast.LENGTH_SHORT)
+                    .show();
+            finish();
+        // purposely not having the DetailActivity close if the movie is already in favorites
+        // so that the message is more clearly presented to the user.
+        } else {
+            Toast.makeText(context, getString(R.string.in_favorites_already_msg),
+                    Toast.LENGTH_SHORT)
+                    .show();
         }
     }
 
