@@ -173,6 +173,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
      */
     private void showMovieDataView() {
         mErrorMessageDisplay.setVisibility(View.INVISIBLE);
+        mEmptyFavoritesMessageDisplay.setVisibility(View.INVISIBLE);
         mRecyclerView.setVisibility(View.VISIBLE);
     }
 
@@ -181,6 +182,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
      */
     private void showErrorMessage() {
         mRecyclerView.setVisibility(View.INVISIBLE);
+        mEmptyFavoritesMessageDisplay.setVisibility(View.INVISIBLE);
         mErrorMessageDisplay.setVisibility(View.VISIBLE);
         Log.e(TAG, getString(R.string.network_error_message));
 
@@ -262,13 +264,12 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
 
             moviesList = movies;
 
-            if (movies != null) {
-                mMovieAdapter.setMovieData(movies);
-            //TODO CURRENTLY this showMEmptyFavoritesMessage does not display. Instead
-            // we are met with a blank screen. The boolean expressions do not capture this
-            // correctly in its current state. This need refactoring.
-            } else if (stateOfSortPreferred.equals(FAVORITES_DISPLAY)) {
+            // Ths size must be checked first because a NONNULL List is returned
+            // even if the database is empty.
+            if (movies.size() < 1 && stateOfSortPreferred.equals(FAVORITES_DISPLAY)) {
                 showEmptyFavoritesMessage();
+            } else if (movies != null) {
+                mMovieAdapter.setMovieData(movies);
             } else {
                 showErrorMessage();
             }
