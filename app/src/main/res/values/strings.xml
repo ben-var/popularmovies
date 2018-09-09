@@ -22,13 +22,13 @@
     <string name="movie_poster_image_content">Movie Poster Image</string>
     <string name="movie_backdrop_content">Movie Backdrop Image</string>
 
-    <string name="overview_label">Overview/Synopsis: </string>
+    <string name="overview_label"><u>Overview/Synopsis</u>:</string>
     <string name="release_date_label">Released On: </string>
     <string name="vote_average_label">Vote Avg: </string>
 
     <string name="add_to_favorites">Add to Favorites</string>
     <string name="add_favorites_confirm">Movie has been added to your list of favorites!</string>
-    <string name="in_favorites_already_msg">Movie is already in your favorites :-)</string>
+    <string name="in_favorites_already_msg">Movie has been removed from your favorites!</string>
     <string name="clear_favorites_option">Reset Favorites List</string>
     <string name="deleted_favorites_message">Favorites Deleted!</string>
     <string name="null_favorites_error">Null Favorites List</string>
@@ -38,5 +38,10 @@
 
     <string name="input_date_format_moviedb">yyyy-MM-dd</string>
     <string name="user_facing_pretty_date_format">MMMM dd, yyyy</string>
+
+    <string name="play_trailer_button_text">PLAY</string>
+
+    <string name="trailer_section_title_text">Trailers &amp; Videos (Press to Play)</string>
+    <string name="review_section_title_text">User Reviews</string>
 
 </resources>

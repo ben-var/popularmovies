@@ -1,20 +1,38 @@
 package com.example.android.moviesone;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import adapters.ReviewAdapter;
+import adapters.TrailerAdapter;
 import database.AppDatabase;
+import database.AppExecutors;
+import model.Movie;
+import model.Review;
+import model.Trailer;
 import utilities.NetworkUtils;
+import utilities.ReviewJSONUtils;
+import utilities.TrailerJSONUtils;
+
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
@@ -25,12 +43,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import adapters.TrailerAdapter.TrailerAdapterOnClickHandler;
+
 /**
  * View to display individual movie data queried from themoviedb. This page acts as an overview
  * for a specific (singular) movie.
  */
 
-public class DetailActivity extends AppCompatActivity {
+public class DetailActivity extends AppCompatActivity implements TrailerAdapterOnClickHandler {
 
     private static final String TAG = DetailActivity.class.getSimpleName();
     private static final String MOVIE_CLASS =  Movie.class.getSimpleName();
@@ -48,8 +68,18 @@ public class DetailActivity extends AppCompatActivity {
     private Button mFavoritesButton;
     private TextView mOverviewTextView;
     private ImageView mBackdropView;
-    // TODO Implement the correct views to display movie trailers
-    private TextView mTrailerViews;
+
+    private TextView mTrailerTitleView;
+    private RecyclerView mTrailerViews;
+    private TrailerAdapterOnClickHandler mTrailerClickHandler;
+    private TrailerAdapter mTrailerAdapter;
+    private List<Trailer> trailerList;
+
+    private RecyclerView mReviewViews;
+    private ReviewAdapter mReviewAdapter;
+    private List<Review> reviewList;
+
+    private ProgressBar mLoadingIndicator;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -58,6 +88,8 @@ public class DetailActivity extends AppCompatActivity {
 
         mDb = AppDatabase.getInstance(getApplicationContext());
 
+        mLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loading_indicator);
+
         mTitleTextView = (TextView) findViewById(R.id.movie_title_tv);
         mPosterView = (ImageView) findViewById(R.id.movie_poster_iv);
         mYearTextView = (TextView) findViewById(R.id.movie_year_tv);
@@ -65,7 +97,11 @@ public class DetailActivity extends AppCompatActivity {
         mFavoritesButton = (Button) findViewById(R.id.add_to_favorites_button);
         mOverviewTextView = (TextView) findViewById(R.id.movie_overview_tv);
         mBackdropView = (ImageView) findViewById(R.id.backdrop_iv);
-        mTrailerViews = (TextView) findViewById(R.id.trailer_views);
+
+        mTrailerTitleView = (TextView) findViewById(R.id.trailer_section_title);
+        mTrailerViews = (RecyclerView) findViewById(R.id.trailer_views);
+
+        mReviewViews = (RecyclerView) findViewById(R.id.review_views);
 
         Intent intentStartedThisActivity = getIntent();
 
@@ -75,7 +111,7 @@ public class DetailActivity extends AppCompatActivity {
          */
         if (intentStartedThisActivity != null) {
             if (intentStartedThisActivity.hasExtra(MOVIE_CLASS)) {
-                mMovie = (Movie) intentStartedThisActivity.getSerializableExtra(MOVIE_CLASS);
+                mMovie = intentStartedThisActivity.getParcelableExtra(MOVIE_CLASS);
 
                 mTitleTextView.setText(mMovie.getTitle());
 
@@ -146,8 +182,23 @@ public class DetailActivity extends AppCompatActivity {
                                         "Error loading image", Toast.LENGTH_SHORT).show();
                             }
                         });
-
             }
+
+
+
+            int numOfColumns = 3;
+            GridLayoutManager trailerLayoutManager = new GridLayoutManager(this, numOfColumns);
+            mTrailerViews.setLayoutManager(trailerLayoutManager);
+            mTrailerAdapter = new TrailerAdapter(this);
+            mTrailerViews.setAdapter(mTrailerAdapter);
+            loadTrailerData();
+
+            LinearLayoutManager reviewLayoutManager = new LinearLayoutManager(this);
+            mReviewViews.setLayoutManager(reviewLayoutManager);
+            mReviewAdapter = new ReviewAdapter();
+            mReviewViews.setAdapter(mReviewAdapter);
+            loadReviewData();
+
         } else {
             Toast.makeText(DetailActivity.this,
                     R.string.error_movie_retrieval_message, Toast.LENGTH_SHORT).show();
@@ -160,22 +211,50 @@ public class DetailActivity extends AppCompatActivity {
      * This method will take the currently selected movie and add it to the underlying database.
      */
     public void onFavoriteButtonClicked() {
-        List<Movie> movieDb = mDb.movieDao().loadAllMovies();
-        Context context = getApplicationContext();
 
-        if (!movieDb.contains(mMovie)) {
-            mDb.movieDao().insertMovie(mMovie);
-            Toast.makeText(getApplicationContext(), getString(R.string.add_favorites_confirm),
-                    Toast.LENGTH_SHORT)
-                    .show();
-            finish();
-        // purposely not having the DetailActivity close if the movie is already in favorites
-        // so that the message is more clearly presented to the user.
-        } else {
-            Toast.makeText(context, getString(R.string.in_favorites_already_msg),
-                    Toast.LENGTH_SHORT)
-                    .show();
-        }
+        final Movie movieSelected = mMovie;
+        final Context context = getApplicationContext();
+
+        AppExecutors.getInstance().diskIO().execute(new Runnable() {
+            @Override
+            public void run() {
+                final List<Movie> movieDb = mDb.movieDao().loadAllMovies();
+
+                if (!movieDb.contains(movieSelected)) {
+                    mDb.movieDao().insertMovie(movieSelected);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            // source of if statement and code block to help with Toast off the main thread
+                            // https://stackoverflow.com/questions/23038682/java-lang-runtimeexception-only-one-looper-may-be-created-per-thread
+                            if (Looper.myLooper() == null) {
+                                Looper.prepare();
+                            }
+
+                            Toast.makeText(getApplicationContext(), getString(R.string.add_favorites_confirm),
+                                    Toast.LENGTH_SHORT)
+                                    .show();
+                        }
+                    });
+                } else {
+                    mDb.movieDao().deleteMovieByMovieId(movieSelected.getMovieId());
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            // source of if statement and code block within to avoid compiler errors found on Stack Overflow
+                            // https://stackoverflow.com/questions/23038682/java-lang-runtimeexception-only-one-looper-may-be-created-per-thread
+                            if (Looper.myLooper() == null) {
+                                Looper.prepare();
+                            }
+
+                            Toast.makeText(context, getString(R.string.in_favorites_already_msg),
+                                    Toast.LENGTH_SHORT)
+                                    .show();
+                        }
+                    });
+                }
+            }
+        });
     }
 
     /**
@@ -229,6 +308,193 @@ public class DetailActivity extends AppCompatActivity {
         }
 
         return resultString;
+    }
+
+    @Override
+    public void onClick(Trailer trailerSelected) {
+        final Context context = getApplicationContext();
+        // Code block found on https://stackoverflow.com/questions/574195/android-youtube-app-play-video-intent
+        // Opens the youtube video via app if installed, otherwise uses a browser
+        Intent appIntent = new Intent(Intent.ACTION_VIEW,
+                NetworkUtils.getTrailerYouTubeUriForApp(trailerSelected));
+        Intent webIntent = new Intent(Intent.ACTION_VIEW,
+                NetworkUtils.getTrailerVideoYouTubeUri(trailerSelected));
+        try {
+            context.startActivity(appIntent);
+        } catch (ActivityNotFoundException ex) {
+            context.startActivity(webIntent);
+        }
+    }
+
+    public void loadTrailerData() {
+        if (isOnline()) {
+            AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                @Override
+                public void run() {
+                    mTrailerViews.setVisibility(View.VISIBLE);
+                    new FetchTrailersTask().execute();
+                }
+            });
+        } else {
+            Log.e(TAG, "Error retrieving trailers for movie:" + mMovie.getMovieId());
+        }
+    }
+
+    public void loadReviewData() {
+        if (isOnline()) {
+            AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                @Override
+                public void run() {
+                    mReviewViews.setVisibility(View.VISIBLE);
+                    new FetchReviewsTask().execute();
+                }
+            });
+        } else {
+            Log.e(TAG, "Error retrieving reviews for movie: " + mMovie.getMovieId());
+        }
+    }
+
+    /**
+     * Asynctask that will perform an asynchronous query to return to the main activity.
+     */
+    public class FetchTrailersTask extends AsyncTask<Void, Void, List<Trailer>> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        /**
+         * Override this method to perform a computation on a background thread. The
+         * specified parameters are the parameters passed to {@link #execute}
+         * by the caller of this task.
+         * <p>
+         * This method can call {@link #publishProgress} to publish updates
+         * on the UI thread.
+         *
+         * @param voids The parameters of the task.
+         * @return A result, defined by the subclass of this task.
+         * @see #onPreExecute()
+         * @see #onPostExecute
+         * @see #publishProgress
+         */
+        @Override
+        protected List<Trailer> doInBackground(Void... voids) {
+
+            final List<Trailer> trailers;
+            URL trailersRequestURL = null;
+
+            trailersRequestURL = NetworkUtils.getEngTrailersForMovie(mMovie);
+
+            if (trailersRequestURL != null) {
+                try{
+                    String JSONResponse = NetworkUtils.GetResponseFromHttpUrl(trailersRequestURL);
+
+                    trailers = TrailerJSONUtils.getTrailersFromJSON(JSONResponse);
+                    return trailers;
+                } catch (Exception e) {
+                    e.printStackTrace();
+
+                    return null;
+                }
+            } else {
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(List<Trailer> trailers) {
+
+            trailerList = trailers;
+
+            // Ths size must be checked first because a NONNULL List is returned
+            // even if the database is empty.
+            if (trailers == null || trailers.size() < 1) {
+                mTrailerViews.setVisibility(View.INVISIBLE);
+            } else {
+                mTrailerAdapter.setTrailerData(trailers);
+            }
+
+            mTrailerViews.setVisibility(View.VISIBLE);
+        }
+    }
+
+    public class FetchReviewsTask extends AsyncTask<Void, Void, List<Review>> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        /**
+         * Override this method to perform a computation on a background thread. The
+         * specified parameters are the parameters passed to {@link #execute}
+         * by the caller of this task.
+         * <p>
+         * This method can call {@link #publishProgress} to publish updates
+         * on the UI thread.
+         *
+         * @param voids The parameters of the task.
+         * @return A result, defined by the subclass of this task.
+         * @see #onPreExecute()
+         * @see #onPostExecute
+         * @see #publishProgress
+         */
+        @Override
+        protected List<Review> doInBackground(Void... voids) {
+            final List<Review> reviews;
+            URL reviewsRequestURL = null;
+
+            int pageNumber = 1;
+            reviewsRequestURL = NetworkUtils.getReviewsForMovie(mMovie, pageNumber);
+
+            if (reviewsRequestURL != null) {
+                try{
+                    String JSONResponse = NetworkUtils.GetResponseFromHttpUrl(reviewsRequestURL);
+
+                    reviews = ReviewJSONUtils.getReviewsFromJSON(JSONResponse);
+                    return reviews;
+                } catch (Exception e) {
+                    e.printStackTrace();
+
+                    return null;
+                }
+            } else {
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(List<Review> reviews) {
+            reviewList = reviews;
+
+            // Ths size must be checked first because a NONNULL List is returned
+            // even if the database is empty.
+            if (reviews == null || reviews.size() < 1) {
+                mReviewViews.setVisibility(View.INVISIBLE);
+            } else {
+                mReviewAdapter.setReviewData(reviews);
+            }
+
+            mReviewViews.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
+     * Method used to check if the device has a valid internet connection.
+     *
+     * Source code was taken from the following site:
+     *
+     * https://stackoverflow.com/questions/1560788/
+     * how-to-check-internet-access-on-android-inetaddress-never-times-out
+     *
+     * @return true if valid internet connection, false if not connected
+     */
+    public boolean isOnline() {
+        ConnectivityManager cm =
+                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return netInfo != null && netInfo.isConnectedOrConnecting();
     }
 }
 

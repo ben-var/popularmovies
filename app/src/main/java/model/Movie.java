@@ -1,10 +1,13 @@
-package com.example.android.moviesone;
+package model;
 
 import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.Ignore;
 import android.arch.persistence.room.PrimaryKey;
+import android.os.Parcel;
+import android.os.Parcelable;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -14,7 +17,7 @@ import java.util.List;
  * documentation: https://developers.themoviedb.org/3/discover/movie-discover
  */
 @Entity(tableName = "favorites")
-public class Movie implements Serializable {
+public class Movie implements Parcelable {
 
     @PrimaryKey(autoGenerate = true)
     private int favoriteId;
@@ -116,6 +119,37 @@ public class Movie implements Serializable {
         this.setVideo(video);
         this.setVoteAverage(voteAverage);
     }
+
+    protected Movie(Parcel in) {
+        favoriteId = in.readInt();
+        posterPath = in.readString();
+        adult = in.readByte() != 0;
+        overview = in.readString();
+        releaseDate = in.readString();
+        genreIdArray = new ArrayList<Integer>();
+        in.readList(genreIdArray, ArrayList.class.getClassLoader());
+        movieId = in.readInt();
+        originalTitle = in.readString();
+        originalLanguage = in.readString();
+        title = in.readString();
+        backdropPath = in.readString();
+        popularity = in.readDouble();
+        voteCount = in.readInt();
+        video = in.readByte() != 0;
+        voteAverage = in.readDouble();
+    }
+
+    public static final Creator<Movie> CREATOR = new Creator<Movie>() {
+        @Override
+        public Movie createFromParcel(Parcel in) {
+            return new Movie(in);
+        }
+
+        @Override
+        public Movie[] newArray(int size) {
+            return new Movie[size];
+        }
+    };
 
     /** Setters and getters for each variable of the Movie class */
 
@@ -282,5 +316,46 @@ public class Movie implements Serializable {
     }
 
 
+    /**
+     * Describe the kinds of special objects contained in this Parcelable
+     * instance's marshaled representation. For example, if the object will
+     * include a file descriptor in the output of {@link #writeToParcel(Parcel, int)},
+     * the return value of this method must include the
+     * {@link #CONTENTS_FILE_DESCRIPTOR} bit.
+     *
+     * @return a bitmask indicating the set of special object types marshaled
+     * by this Parcelable object instance.
+     */
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    /**
+     * Flatten this object in to a Parcel.
+     *
+     * @param dest  The Parcel in which the object should be written.
+     * @param flags Additional flags about how the object should be written.
+     *              May be 0 or {@link #PARCELABLE_WRITE_RETURN_VALUE}.
+     */
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+
+        dest.writeInt(favoriteId);
+        dest.writeString(posterPath);
+        dest.writeByte((byte) (adult ? 1 : 0));
+        dest.writeString(overview);
+        dest.writeString(releaseDate);
+        dest.writeList(genreIdArray);
+        dest.writeInt(movieId);
+        dest.writeString(originalTitle);
+        dest.writeString(originalLanguage);
+        dest.writeString(title);
+        dest.writeString(backdropPath);
+        dest.writeDouble(popularity);
+        dest.writeInt(voteCount);
+        dest.writeByte((byte) (video ? 1 : 0));
+        dest.writeDouble(voteAverage);
+    }
 }
 

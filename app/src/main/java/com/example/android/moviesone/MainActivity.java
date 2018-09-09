@@ -6,6 +6,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -18,13 +19,18 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.android.moviesone.MovieAdapter.MovieAdapterOnClickHandler;
+import adapters.MovieAdapter;
+import adapters.MovieAdapter.MovieAdapterOnClickHandler;
 
 import database.AppDatabase;
+import database.AppExecutors;
+import model.Movie;
 import utilities.MovieJSONUtils;
 import utilities.NetworkUtils;
 
+import java.io.Serializable;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -39,6 +45,8 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
 
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final String MOVIE_CLASS =  Movie.class.getSimpleName();
+    public static final String PARCELABLE_KEY = "List Of Movies";
+    public static final String PARCELABLE_SORT_STATE = "Sort State";
 
     private AppDatabase mDb;
 
@@ -46,6 +54,8 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
     private static final String TOP_RATED_SORT = "top-rated";
     private static final String FAVORITES_DISPLAY = "favorites";
     private static final String DEFAULT_SORT = POPULAR_SORT;
+
+    private static boolean needsNetworkCall = true;
 
     private static String stateOfSortPreferred = DEFAULT_SORT;
 
@@ -59,27 +69,41 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        mDb = AppDatabase.getInstance(getApplicationContext());
+        if (savedInstanceState == null) {
+            setContentView(R.layout.activity_main);
 
-        mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_movie);
-        mErrorMessageDisplay = (TextView) findViewById(R.id.tv_error_message_display);
-        mEmptyFavoritesMessageDisplay = (TextView) findViewById(R.id.empty_favorites_display);
-        mLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loading_indicator);
+            mDb = AppDatabase.getInstance(getApplicationContext());
 
-        int numOfColumns = 2;
-        GridLayoutManager layoutManager = new GridLayoutManager(
-                this, numOfColumns);
+            mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_movie);
+            mErrorMessageDisplay = (TextView) findViewById(R.id.tv_error_message_display);
+            mEmptyFavoritesMessageDisplay = (TextView) findViewById(R.id.empty_favorites_display);
+            mLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loading_indicator);
 
-        mRecyclerView.setLayoutManager(layoutManager);
-        mRecyclerView.setHasFixedSize(true);
-        mMovieAdapter = new MovieAdapter(this);
-        mRecyclerView.setAdapter(mMovieAdapter);
-        mLoadingIndicator.setVisibility(View.VISIBLE);
+            int numOfColumns = 2;
+            GridLayoutManager layoutManager = new GridLayoutManager(
+                    this, numOfColumns);
 
-        loadMovieData();
+            mRecyclerView.setLayoutManager(layoutManager);
+            mRecyclerView.setHasFixedSize(true);
+            mMovieAdapter = new MovieAdapter(this);
+            mRecyclerView.setAdapter(mMovieAdapter);
+            mLoadingIndicator.setVisibility(View.VISIBLE);
+
+            loadMovieData();
+        } else {
+            stateOfSortPreferred = savedInstanceState.getParcelable(PARCELABLE_SORT_STATE);
+            moviesList = savedInstanceState.getParcelableArrayList(PARCELABLE_KEY);
+            if (moviesList == null) {
+                needsNetworkCall = true;
+            } else {
+                needsNetworkCall = false;
+            }
+            loadMovieData();
+            needsNetworkCall = true;
+        }
     }
 
     @Override
@@ -92,7 +116,15 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
     }
 
     @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putParcelableArrayList(PARCELABLE_KEY, (ArrayList<Movie>) moviesList);
+        outState.putString(PARCELABLE_SORT_STATE, stateOfSortPreferred);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+
         int itemId = item.getItemId();
 
         if (itemId == R.id.display_favorites) {
@@ -104,7 +136,13 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
         } else if (itemId == R.id.refresh_page_option) {
             // no change in state required
         } else if (itemId == R.id.clear_all_favorites) {
-            mDb.movieDao().nukeTable();
+            AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                @Override
+                public void run() {
+                    mDb.movieDao().nukeTable();
+                }
+            });
+
             Toast.makeText(getApplicationContext(), getString(R.string.deleted_favorites_message),
                     Toast.LENGTH_SHORT)
                     .show();
@@ -131,11 +169,14 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
 
         if (isOnline()) {
             showMovieDataView();
-            new FetchMoviesTask().execute(stateOfSortPreferred);
+            if (needsNetworkCall) {
+                new FetchMoviesTask().execute(stateOfSortPreferred);
+            }
         } else {
             Log.e(TAG, stateOfSortPreferred);
             showErrorMessage();
         }
+
     }
 
     /**
@@ -161,10 +202,11 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
      */
     @Override
     public void onClick(Movie movieSelected) {
+        Log.e("TSTING", movieSelected.toString());
         Context context = this;
         Class destinationClass = DetailActivity.class;
         Intent intentToStartDetailActivity = new Intent(context, destinationClass);
-        intentToStartDetailActivity.putExtra(MOVIE_CLASS, movieSelected);
+        intentToStartDetailActivity.putExtra(MOVIE_CLASS, (Parcelable) movieSelected);
         startActivity(intentToStartDetailActivity);
     }
 
@@ -227,7 +269,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
         @Override
         protected List<Movie> doInBackground(String... strings) {
 
-            List<Movie> movies = null;
+            final List<Movie> movies;
             URL movieRequestURL = null;
 
             if (strings.length == 0) { return null; }

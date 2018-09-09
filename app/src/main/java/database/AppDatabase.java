@@ -7,7 +7,7 @@ import android.arch.persistence.room.TypeConverters;
 import android.content.Context;
 import android.util.Log;
 
-import com.example.android.moviesone.Movie;
+import model.Movie;
 
 /**
  * Database object for Room implementation of favorited Database.
@@ -27,9 +27,6 @@ public abstract class AppDatabase extends RoomDatabase {
                 Log.d(LOG_TAG, "Creating new database instance.");
                 sInstance = Room.databaseBuilder(context.getApplicationContext(),
                         AppDatabase.class, AppDatabase.DATABASE_NAME)
-                        // TODO SHOULD NOT BE IMPLEMENTED IN LIVE
-                        // THIS IS ENABLED FOR TESTING
-                        .allowMainThreadQueries()
                         .build();
             }
         }

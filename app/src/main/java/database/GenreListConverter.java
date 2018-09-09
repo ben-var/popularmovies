@@ -1,6 +1,7 @@
 package database;
 
 import android.arch.persistence.room.TypeConverter;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ public class GenreListConverter {
         List<Integer> genreList = new ArrayList<Integer>();
 
         String[] genresArray = null;
-        if(genres.length() >= 1) {
+        if(genres.length() >= 1 && genres != null) {
             genresArray = genres.split(" ");
         } else {
             return null;
@@ -41,9 +42,14 @@ public class GenreListConverter {
         return genreList;
     }
 
+    @NonNull
     @TypeConverter
     public static String toGenreString(List<Integer> genreList) {
         StringBuilder genreString = new StringBuilder();
+
+        if (genreList == null) {
+            return null;
+        }
 
         for (Integer genreInt : genreList) {
             genreString.append(genreInt + " ");

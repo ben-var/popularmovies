@@ -2,7 +2,7 @@ package utilities;
 
 import android.util.Log;
 
-import com.example.android.moviesone.Movie;
+import model.Movie;
 
 import org.json.JSONArray;
 import org.json.JSONException;

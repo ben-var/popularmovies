@@ -7,7 +7,7 @@ import android.arch.persistence.room.OnConflictStrategy;
 import android.arch.persistence.room.Query;
 import android.arch.persistence.room.Update;
 
-import com.example.android.moviesone.Movie;
+import model.Movie;
 
 import java.util.List;
 
@@ -29,6 +29,7 @@ public interface MovieDao {
     @Update(onConflict = OnConflictStrategy.REPLACE)
     void updateMovie(Movie movie);
 
-    @Delete
-    void deleteMovie(Movie movie);
+    @Query("DELETE FROM favorites WHERE movieId=:movieId")
+    void deleteMovieByMovieId(int movieId);
+
 }

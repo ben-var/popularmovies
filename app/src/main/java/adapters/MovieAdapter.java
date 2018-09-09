@@ -1,4 +1,4 @@
-package com.example.android.moviesone;
+package adapters;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
@@ -9,7 +9,10 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import model.Movie;
 import utilities.NetworkUtils;
+
+import com.example.android.moviesone.R;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
