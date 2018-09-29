@@ -308,10 +308,10 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
 
             // Ths size must be checked first because a NONNULL List is returned
             // even if the database is empty.
-            if (movies.size() < 1 && stateOfSortPreferred.equals(FAVORITES_DISPLAY)) {
-                showEmptyFavoritesMessage();
-            } else if (movies != null) {
+            if (movies != null) {
                 mMovieAdapter.setMovieData(movies);
+            } else if (stateOfSortPreferred.equals(FAVORITES_DISPLAY) && movies.size() < 1) {
+                showEmptyFavoritesMessage();
             } else {
                 showErrorMessage();
             }

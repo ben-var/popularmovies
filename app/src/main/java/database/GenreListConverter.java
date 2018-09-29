@@ -20,7 +20,7 @@ public class GenreListConverter {
         List<Integer> genreList = new ArrayList<Integer>();
 
         String[] genresArray = null;
-        if(genres.length() >= 1 && genres != null) {
+        if(genres != null && genres.length() >= 1) {
             genresArray = genres.split(" ");
         } else {
             return null;
