@@ -116,4 +116,8 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
         mMovieData = movieData;
         notifyDataSetChanged();
     }
+
+    public List<Movie> getMovieData() {
+        return mMovieData;
+    }
 }

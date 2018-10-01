@@ -1,5 +1,7 @@
 package com.example.android.moviesone;
 
+import android.arch.lifecycle.LiveData;
+import android.arch.lifecycle.Observer;
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
@@ -7,6 +9,7 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -29,6 +32,7 @@ import utilities.MovieJSONUtils;
 import utilities.NetworkUtils;
 
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -72,29 +76,28 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
 
         super.onCreate(savedInstanceState);
 
-        if (savedInstanceState == null) {
-            setContentView(R.layout.activity_main);
 
-            mDb = AppDatabase.getInstance(getApplicationContext());
+        setContentView(R.layout.activity_main);
 
-            mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_movie);
-            mErrorMessageDisplay = (TextView) findViewById(R.id.tv_error_message_display);
-            mEmptyFavoritesMessageDisplay = (TextView) findViewById(R.id.empty_favorites_display);
-            mLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loading_indicator);
+        mDb = AppDatabase.getInstance(getApplicationContext());
 
-            int numOfColumns = 2;
-            GridLayoutManager layoutManager = new GridLayoutManager(
-                    this, numOfColumns);
+        mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_movie);
+        mErrorMessageDisplay = (TextView) findViewById(R.id.tv_error_message_display);
+        mEmptyFavoritesMessageDisplay = (TextView) findViewById(R.id.empty_favorites_display);
+        mLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loading_indicator);
 
-            mRecyclerView.setLayoutManager(layoutManager);
-            mRecyclerView.setHasFixedSize(true);
-            mMovieAdapter = new MovieAdapter(this);
-            mRecyclerView.setAdapter(mMovieAdapter);
-            mLoadingIndicator.setVisibility(View.VISIBLE);
+        int numOfColumns = 2;
+        GridLayoutManager layoutManager = new GridLayoutManager(
+                this, numOfColumns);
 
-            loadMovieData();
-        } else {
-            stateOfSortPreferred = savedInstanceState.getParcelable(PARCELABLE_SORT_STATE);
+        mRecyclerView.setLayoutManager(layoutManager);
+        mRecyclerView.setHasFixedSize(true);
+        mMovieAdapter = new MovieAdapter(this);
+        mRecyclerView.setAdapter(mMovieAdapter);
+        mLoadingIndicator.setVisibility(View.VISIBLE);
+
+        if (savedInstanceState != null) {
+            stateOfSortPreferred = savedInstanceState.getString(PARCELABLE_SORT_STATE);
             moviesList = savedInstanceState.getParcelableArrayList(PARCELABLE_KEY);
             if (moviesList == null) {
                 needsNetworkCall = true;
@@ -103,6 +106,8 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
             }
             loadMovieData();
             needsNetworkCall = true;
+        } else {
+            loadMovieData();
         }
     }
 
@@ -125,6 +130,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
+        final LiveData<List<Movie>> moviesLD;
         int itemId = item.getItemId();
 
         if (itemId == R.id.display_favorites) {
@@ -135,6 +141,19 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
             stateOfSortPreferred = TOP_RATED_SORT;
         } else if (itemId == R.id.refresh_page_option) {
             // no change in state required
+            moviesLD = mDb.movieDao().loadAllMovies();
+            moviesLD.observe(this, new Observer<List<Movie>>() {
+                @Override
+                public void onChanged(@Nullable List<Movie> movies) {
+                    Log.d(TAG, "Receiving database update from LiveData");
+                    mMovieAdapter.setMovieData(movies);
+                    if (mMovieAdapter.getMovieData().size() < 1) {
+                        showEmptyFavoritesMessage();
+                    }
+
+                    moviesLD.removeObserver(this);
+                }
+            });
         } else if (itemId == R.id.clear_all_favorites) {
             AppExecutors.getInstance().diskIO().execute(new Runnable() {
                 @Override
@@ -143,9 +162,22 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
                 }
             });
 
+            moviesLD = mDb.movieDao().loadAllMovies();
+            moviesLD.observe(this, new Observer<List<Movie>>() {
+                @Override
+                public void onChanged(@Nullable List<Movie> movies) {
+                    Log.d(TAG, "Receiving database update from LiveData");
+                    mMovieAdapter.setMovieData(movies);
+
+                    moviesLD.removeObserver(this);
+                }
+            });
+
             Toast.makeText(getApplicationContext(), getString(R.string.deleted_favorites_message),
                     Toast.LENGTH_SHORT)
                     .show();
+
+            showEmptyFavoritesMessage();
             return true;
         } else {
             return super.onOptionsItemSelected(item);
@@ -171,6 +203,8 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
             showMovieDataView();
             if (needsNetworkCall) {
                 new FetchMoviesTask().execute(stateOfSortPreferred);
+            } else {
+                showMovieDataView();
             }
         } else {
             Log.e(TAG, stateOfSortPreferred);
@@ -270,6 +304,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
         protected List<Movie> doInBackground(String... strings) {
 
             final List<Movie> movies;
+            final LiveData<List<Movie>> moviesLD;
             URL movieRequestURL = null;
 
             if (strings.length == 0) { return null; }
@@ -280,7 +315,18 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
             } else if (sortBy.equals(TOP_RATED_SORT)) {
                 movieRequestURL = NetworkUtils.getTopRatedMoviesURL();
             } else if (sortBy.equals(FAVORITES_DISPLAY)) {
-                return mDb.movieDao().loadAllMovies();
+                // Project was built with Asynctask prior to implementation
+                // of LiveData - code can be refactored to better utilize
+                // features of LiveData.
+                moviesLD = mDb.movieDao().loadAllMovies();
+                moviesLD.observe(MainActivity.this, new Observer<List<Movie>>() {
+                    @Override
+                    public void onChanged(@Nullable List<Movie> moviesObs) {
+                       mMovieAdapter.setMovieData(moviesObs);
+                       moviesLD.removeObserver(this);
+                    }
+                });
+                return mMovieAdapter.getMovieData();
             } else {
                 return null;
             }
@@ -308,12 +354,17 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
 
             // Ths size must be checked first because a NONNULL List is returned
             // even if the database is empty.
-            if (movies != null) {
-                mMovieAdapter.setMovieData(movies);
-            } else if (stateOfSortPreferred.equals(FAVORITES_DISPLAY) && movies.size() < 1) {
-                showEmptyFavoritesMessage();
-            } else {
+            if (movies == null) {
                 showErrorMessage();
+            } else if (stateOfSortPreferred.equals(FAVORITES_DISPLAY)) {
+                if (movies.size() < 1) {
+                    showEmptyFavoritesMessage();
+                }
+                else {
+                    showMovieDataView();
+                }
+            } else {
+                mMovieAdapter.setMovieData(movies);
             }
 
             mLoadingIndicator.setVisibility(View.INVISIBLE);

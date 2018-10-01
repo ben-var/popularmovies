@@ -1,5 +1,6 @@
 package database;
 
+import android.arch.lifecycle.LiveData;
 import android.arch.persistence.room.Dao;
 import android.arch.persistence.room.Delete;
 import android.arch.persistence.room.Insert;
@@ -18,7 +19,7 @@ import java.util.List;
 public interface MovieDao {
 
     @Query("SELECT * FROM favorites ORDER BY favoriteId ASC")
-    List<Movie> loadAllMovies();
+    LiveData<List<Movie>> loadAllMovies();
 
     @Query("DELETE FROM favorites")
     void nukeTable();
@@ -32,4 +33,6 @@ public interface MovieDao {
     @Query("DELETE FROM favorites WHERE movieId=:movieId")
     void deleteMovieByMovieId(int movieId);
 
+    @Query("SELECT * FROM favorites WHERE movieId = :movieId")
+    LiveData<Movie> loadMovieById(int movieId);
 }

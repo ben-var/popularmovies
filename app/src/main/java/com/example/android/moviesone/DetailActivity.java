@@ -1,5 +1,7 @@
 package com.example.android.moviesone;
 
+import android.arch.lifecycle.LiveData;
+import android.arch.lifecycle.Observer;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
@@ -215,44 +217,56 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapterO
         final Movie movieSelected = mMovie;
         final Context context = getApplicationContext();
 
-        AppExecutors.getInstance().diskIO().execute(new Runnable() {
-            @Override
-            public void run() {
-                final List<Movie> movieDb = mDb.movieDao().loadAllMovies();
+        final LiveData<List<Movie>> moviesLD = mDb.movieDao().loadAllMovies();
 
-                if (!movieDb.contains(movieSelected)) {
-                    mDb.movieDao().insertMovie(movieSelected);
-                    runOnUiThread(new Runnable() {
+        moviesLD.observe(this, new Observer<List<Movie>>() {
+            boolean added;
+
+            @Override
+            public void onChanged(@Nullable List<Movie> movies) {
+                if (movies != null && !movies.contains(movieSelected)) {
+                    Log.d(TAG, movies.toString());
+                    AppExecutors.getInstance().diskIO().execute(new Runnable() {
                         @Override
                         public void run() {
-                            // source of if statement and code block to help with Toast off the main thread
-                            // https://stackoverflow.com/questions/23038682/java-lang-runtimeexception-only-one-looper-may-be-created-per-thread
-                            if (Looper.myLooper() == null) {
-                                Looper.prepare();
-                            }
+                            mDb.movieDao().insertMovie(movieSelected);
+                        }
+                    });
+                    added = true;
+                } else {
+                    AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            mDb.movieDao().deleteMovieByMovieId(movieSelected.getMovieId());
+                        }
+                    });
+                    added = false;
+                }
 
+                makeToast();
+                moviesLD.removeObserver(this);
+            }
+
+            public void makeToast() {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        // source of if statement and code block to help with Toast off the main thread
+                        // https://stackoverflow.com/questions/23038682/java-lang-runtimeexception-only-one-looper-may-be-created-per-thread
+                        if (Looper.myLooper() == null) {
+                            Looper.prepare();
+                        }
+                        if (added) {
                             Toast.makeText(getApplicationContext(), getString(R.string.add_favorites_confirm),
                                     Toast.LENGTH_SHORT)
                                     .show();
-                        }
-                    });
-                } else {
-                    mDb.movieDao().deleteMovieByMovieId(movieSelected.getMovieId());
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            // source of if statement and code block within to avoid compiler errors found on Stack Overflow
-                            // https://stackoverflow.com/questions/23038682/java-lang-runtimeexception-only-one-looper-may-be-created-per-thread
-                            if (Looper.myLooper() == null) {
-                                Looper.prepare();
-                            }
-
-                            Toast.makeText(context, getString(R.string.in_favorites_already_msg),
+                        } else {
+                            Toast.makeText(getApplicationContext(), getString(R.string.in_favorites_already_msg),
                                     Toast.LENGTH_SHORT)
                                     .show();
                         }
-                    });
-                }
+                    }
+                });
             }
         });
     }

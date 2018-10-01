@@ -1,4 +1,4 @@
-package database;
+package viewmodels;
 
 /**
  * Created by Benny on 9/30/2018.

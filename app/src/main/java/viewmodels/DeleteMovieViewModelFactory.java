@@ -1,8 +1,10 @@
-package database;
+package viewmodels;
 
 import android.arch.lifecycle.ViewModel;
 import android.arch.lifecycle.ViewModelProvider;
 import android.support.annotation.NonNull;
+
+import database.AppDatabase;
 
 /**
  * Created by Benny on 9/30/2018.
