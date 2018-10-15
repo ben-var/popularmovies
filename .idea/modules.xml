@@ -2,10 +2,12 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$USER_HOME$/and-uda/popularmovies/app/app.iml" filepath="$USER_HOME$/and-uda/popularmovies/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://C:\Users\benva\dev\popularmovies\app\app.iml" filepath="C:\Users\benva\dev\popularmovies\app\app.iml" />
-      <module fileurl="file://$USER_HOME$/and-uda/popularmovies/popularmovies.iml" filepath="$USER_HOME$/and-uda/popularmovies/popularmovies.iml" />
+      <module fileurl="file://C:\Users\Benny\and-uda\popularmovies\app\app.iml" filepath="C:\Users\Benny\and-uda\popularmovies\app\app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/popularmovies.iml" filepath="$PROJECT_DIR$/popularmovies.iml" />
       <module fileurl="file://C:\Users\benva\dev\popularmovies\popularmovies.iml" filepath="C:\Users\benva\dev\popularmovies\popularmovies.iml" />
+      <module fileurl="file://C:\Users\Benny\and-uda\popularmovies\popularmovies.iml" filepath="C:\Users\Benny\and-uda\popularmovies\popularmovies.iml" />
     </modules>
   </component>
 </project>

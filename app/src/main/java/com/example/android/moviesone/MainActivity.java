@@ -2,6 +2,7 @@ package com.example.android.moviesone;
 
 import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModelProviders;
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
@@ -12,6 +13,7 @@ import android.os.Parcelable;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.MenuInflater;
@@ -30,6 +32,7 @@ import database.AppExecutors;
 import model.Movie;
 import utilities.MovieJSONUtils;
 import utilities.NetworkUtils;
+import viewmodels.MainViewModel;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
@@ -51,6 +54,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
     private static final String MOVIE_CLASS =  Movie.class.getSimpleName();
     public static final String PARCELABLE_KEY = "List Of Movies";
     public static final String PARCELABLE_SORT_STATE = "Sort State";
+    public static final String RECYCLERVIEW_POS = "Position";
 
     private AppDatabase mDb;
 
@@ -68,6 +72,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
     private TextView mErrorMessageDisplay;
     private TextView mEmptyFavoritesMessageDisplay;
     private ProgressBar mLoadingIndicator;
+    private GridLayoutManager mLayoutManager;
 
     private List<Movie> moviesList;
 
@@ -87,10 +92,10 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
         mLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loading_indicator);
 
         int numOfColumns = 2;
-        GridLayoutManager layoutManager = new GridLayoutManager(
+        mLayoutManager = new GridLayoutManager(
                 this, numOfColumns);
 
-        mRecyclerView.setLayoutManager(layoutManager);
+        mRecyclerView.setLayoutManager(mLayoutManager);
         mRecyclerView.setHasFixedSize(true);
         mMovieAdapter = new MovieAdapter(this);
         mRecyclerView.setAdapter(mMovieAdapter);
@@ -99,14 +104,43 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
         if (savedInstanceState != null) {
             stateOfSortPreferred = savedInstanceState.getString(PARCELABLE_SORT_STATE);
             moviesList = savedInstanceState.getParcelableArrayList(PARCELABLE_KEY);
+            int pos = savedInstanceState.getInt(RECYCLERVIEW_POS);
             if (moviesList == null) {
                 needsNetworkCall = true;
             } else {
+                mMovieAdapter.setMovieData(moviesList);
+                mRecyclerView.getLayoutManager().scrollToPosition(pos);
+                showMovieDataView();
                 needsNetworkCall = false;
             }
             loadMovieData();
-            needsNetworkCall = true;
         } else {
+            loadMovieData();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        needsNetworkCall = false;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (stateOfSortPreferred.equals(FAVORITES_DISPLAY)) {
+
+            MainViewModel viewModel = ViewModelProviders.of(MainActivity.this).get(MainViewModel.class);
+            viewModel.getMovies().observe(MainActivity.this, new Observer<List<Movie>>() {
+                @Override
+                public void onChanged(@Nullable List<Movie> moviesObs) {
+                    mMovieAdapter.setMovieData(moviesObs);
+                    moviesList = moviesObs;
+                }
+            });
+        } else {
+            needsNetworkCall = true;
             loadMovieData();
         }
     }
@@ -124,6 +158,9 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
     protected void onSaveInstanceState(Bundle outState) {
         outState.putParcelableArrayList(PARCELABLE_KEY, (ArrayList<Movie>) moviesList);
         outState.putString(PARCELABLE_SORT_STATE, stateOfSortPreferred);
+        int pos = mLayoutManager.findFirstVisibleItemPosition();
+        outState.putInt(RECYCLERVIEW_POS, pos);
+
         super.onSaveInstanceState(outState);
     }
 
@@ -150,8 +187,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
                     if (mMovieAdapter.getMovieData().size() < 1) {
                         showEmptyFavoritesMessage();
                     }
-
-                    moviesLD.removeObserver(this);
                 }
             });
         } else if (itemId == R.id.clear_all_favorites) {
@@ -168,8 +203,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
                 public void onChanged(@Nullable List<Movie> movies) {
                     Log.d(TAG, "Receiving database update from LiveData");
                     mMovieAdapter.setMovieData(movies);
-
-                    moviesLD.removeObserver(this);
                 }
             });
 
@@ -200,7 +233,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
     private void loadMovieData() {
 
         if (isOnline()) {
-            showMovieDataView();
             if (needsNetworkCall) {
                 new FetchMoviesTask().execute(stateOfSortPreferred);
             } else {
@@ -250,6 +282,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
     private void showMovieDataView() {
         mErrorMessageDisplay.setVisibility(View.INVISIBLE);
         mEmptyFavoritesMessageDisplay.setVisibility(View.INVISIBLE);
+        mLoadingIndicator.setVisibility(View.INVISIBLE);
         mRecyclerView.setVisibility(View.VISIBLE);
     }
 
@@ -304,7 +337,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
         protected List<Movie> doInBackground(String... strings) {
 
             final List<Movie> movies;
-            final LiveData<List<Movie>> moviesLD;
             URL movieRequestURL = null;
 
             if (strings.length == 0) { return null; }
@@ -318,12 +350,12 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
                 // Project was built with Asynctask prior to implementation
                 // of LiveData - code can be refactored to better utilize
                 // features of LiveData.
-                moviesLD = mDb.movieDao().loadAllMovies();
-                moviesLD.observe(MainActivity.this, new Observer<List<Movie>>() {
+                MainViewModel viewModel = ViewModelProviders.of(MainActivity.this).get(MainViewModel.class);
+                viewModel.getMovies().observe(MainActivity.this, new Observer<List<Movie>>() {
                     @Override
                     public void onChanged(@Nullable List<Movie> moviesObs) {
                        mMovieAdapter.setMovieData(moviesObs);
-                       moviesLD.removeObserver(this);
+                       moviesList = moviesObs;
                     }
                 });
                 return mMovieAdapter.getMovieData();
@@ -343,7 +375,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapterOnCli
                     return null;
                 }
             } else {
-                return null;
+                return mMovieAdapter.getMovieData();
             }
         }
 

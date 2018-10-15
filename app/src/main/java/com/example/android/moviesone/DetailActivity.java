@@ -2,9 +2,11 @@ package com.example.android.moviesone;
 
 import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModelProviders;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -46,6 +48,7 @@ import java.util.List;
 import java.util.Locale;
 
 import adapters.TrailerAdapter.TrailerAdapterOnClickHandler;
+import viewmodels.MainViewModel;
 
 /**
  * View to display individual movie data queried from themoviedb. This page acts as an overview
@@ -58,6 +61,7 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapterO
     private static final String MOVIE_CLASS =  Movie.class.getSimpleName();
 
     private AppDatabase mDb;
+    private List<Movie> mFavorites;
 
     private static final int HIGHEST_POSSIBLE_SCORE = 10;
 
@@ -159,6 +163,7 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapterO
                 };
 
                 mFavoritesButton.setOnClickListener(favButtonListener);
+                checkFavoriteState();
 
                 String overviewText = getString(R.string.overview_label) + "\n\n"
                                                                     + mMovie.getOverview();
@@ -267,6 +272,35 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapterO
                         }
                     }
                 });
+            }
+        });
+    }
+
+    public void checkFavoriteState() {
+
+        final Movie movieSelected = mMovie;
+        MainViewModel viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
+        viewModel.getMovies().observe(this, new Observer<List<Movie>>() {
+            @Override
+            public void onChanged(@Nullable List<Movie> movies) {
+                if (movies != null) {
+                    updateFavorites(movies.contains(movieSelected));
+                }
+            }
+
+            /**
+             * Will update the favorites button to appropriate appearance depending on boolean
+             * value representing whether the movie is in the DB or not.
+             * @param inDB
+             */
+            public void updateFavorites(boolean inDB) {
+                if (inDB) {
+                    mFavoritesButton.setText(R.string.remove_from_favorites);
+                    mFavoritesButton.setBackgroundColor(Color.argb(255,139, 0, 0));
+                } else {
+                    mFavoritesButton.setText(R.string.add_to_favorites);
+                    mFavoritesButton.setBackgroundColor(Color.argb(255,34,139,34));
+                }
             }
         });
     }

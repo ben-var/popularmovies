@@ -27,6 +27,7 @@
     <string name="vote_average_label">Vote Avg: </string>
 
     <string name="add_to_favorites">Add to Favorites</string>
+    <string name="remove_from_favorites">Remove Favorite</string>
     <string name="add_favorites_confirm">Movie has been added to your list of favorites!</string>
     <string name="in_favorites_already_msg">Movie has been removed from your favorites!</string>
     <string name="clear_favorites_option">Reset Favorites List</string>
