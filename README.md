@@ -13,5 +13,3 @@
 2. Open the project in android studio
 3. <em>Insert</em> your moviedb API key into the source code at the specific TODO in the project (in the NetworkUtils.java file)<br>
      i. To obtain an API key, please refer to the following URL: https://developers.themoviedb.org/3/getting-started/introduction
-     
-# Caution: PLEASE REMOVE ANY AND ALL API KEYS WITHIN THE PROJECT BEFORE UPLOADING OR SHARING THE SOURCE CODE OF THIS APPLICATION
